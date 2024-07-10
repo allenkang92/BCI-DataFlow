@@ -40,6 +40,20 @@
     </tbody>
 </table>
 
+{% if timeseries_plot %}
+<h2 class="mb-3">Data Visualization</h2>
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <h3>Channel Data Over Time</h3>
+        <img src="data:image/png;base64,{{ timeseries_plot }}" alt="Time Series Plot" class="img-fluid">
+    </div>
+    <div class="col-md-6 mb-4">
+        <h3>Channel Correlation Heatmap</h3>
+        <img src="data:image/png;base64,{{ heatmap_plot }}" alt="Correlation Heatmap" class="img-fluid">
+    </div>
+</div>
+{% endif %}
+
 <a href="{% url 'add_data_point' session.id %}" class="btn btn-primary">Add Data Point</a>
 <a href="{% url 'session_list' %}" class="btn btn-secondary">Back to Session List</a>
 {% endblock %}

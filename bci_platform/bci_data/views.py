@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import BCISession, BCIData
 from .forms import BCISessionForm, BCIDataForm
+from .analysis import generate_session_plots
 
 def session_list(request):
     sessions = BCISession.objects.all()
@@ -8,8 +9,16 @@ def session_list(request):
 
 def session_detail(request, session_id):
     session = BCISession.objects.get(id=session_id)
-    data_points = session.data_points.all()
-    return render(request, 'bci_data/session_detail.html', {'session': session, 'data_points': data_points})
+    data_points = session.data_points.all().order_by('timestamp')
+    timeseries_plot, heatmap_plot = generate_session_plots(session)
+    
+    context = {
+        'session': session,
+        'data_points': data_points,
+        'timeseries_plot': timeseries_plot,
+        'heatmap_plot': heatmap_plot,
+    }
+    return render(request, 'bci_data/session_detail.html', context)
 
 def create_session(request):
     if request.method == 'POST':
