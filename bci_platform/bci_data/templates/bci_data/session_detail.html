@@ -3,6 +3,30 @@
 {% block title %}Session: {{ session.session_name }}{% endblock %}
 
 {% block content %}
+{% extends 'bci_data/base.html' %}
+
+{% block content %}
+<!-- 기존 내용 -->
+
+<script>
+    const sessionId = "{{ session.id }}";
+    const socket = new WebSocket(
+        'ws://' + window.location.host +
+        '/ws/bci/' + sessionId + '/'
+    );
+
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log(data);
+        // 여기에 그래프 업데이트 로직 추가
+    };
+
+    socket.onclose = function(e) {
+        console.error('WebSocket closed unexpectedly');
+    };
+</script>
+{% endblock %}
+
 <h1 class="mb-4">Session: {{ session.session_name }}</h1>
 <div class="card mb-4">
     <div class="card-body">
