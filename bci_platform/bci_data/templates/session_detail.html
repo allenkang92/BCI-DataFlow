@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BCI Session Detail</title>
+</head>
+<body>
+    <h1>Session: {{ session.session_name }}</h1>
+    <p>Date Recorded: {{ session.date_recorded }}</p>
+    <p>Subject ID: {{ session.subject_id }}</p>
+    
+    <h2>Data Points</h2>
+    <ul>
+    {% for point in data_points %}
+        <li>Timestamp: {{ point.timestamp }}, Channel 1: {{ point.channel_1 }}, Channel 2: {{ point.channel_2 }}, Channel 3: {{ point.channel_3 }}, Channel 4: {{ point.channel_4 }}</li>
+    {% empty %}
+        <li>No data points recorded yet.</li>
+    {% endfor %}
+    </ul>
+    
+    <a href="{% url 'add_data_point' session.id %}">Add Data Point</a>
+    <br>
+    <a href="{% url 'session_list' %}">Back to Session List</a>
+</body>
+</html>

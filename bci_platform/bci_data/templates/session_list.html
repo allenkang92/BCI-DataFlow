@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BCI Sessions</title>
+</head>
+<body>
+    <h1>BCI Sessions</h1>
+    <ul>
+    {% for session in sessions %}
+        <li><a href="{% url 'session_detail' session.id %}">{{ session.session_name }}</a></li>
+    {% endfor %}
+    </ul>
+    <a href="{% url 'create_session' %}">Create New Session</a>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Data Point</title>
+</head>
+<body>
+    <h1>Add Data Point to Session: {{ session.session_name }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Add Data Point</button>
+    </form>
+    <a href="{% url 'session_detail' session.id %}">Back to Session Detail</a>
+</body>
+</html>
