@@ -1,6 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import BCISession, BCIData
-from .forms import BCISessionForm, BCIDataForm
+from .forms import BCIDataForm
 from .analysis import generate_session_plots
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -33,7 +33,7 @@ def create_session(request):
     return render(request, 'bci_data/create_session.html', {'form': form})
 
 def add_data_point(request, session_id):
-    session = BCISession.objects.get(id=session_id)
+    session = get_object_or_404(BCISession, id=session_id)
     if request.method == 'POST':
         form = BCIDataForm(request.POST)
         if form.is_valid():
