@@ -3,6 +3,23 @@
 {% block title %}Session: {{ session.session_name }}{% endblock %}
 
 {% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <h2 class="mb-3">Data Points</h2>
+            <div class="table-responsive">
+                <table class="table table-striped" id="data-table">
+                    <!-- 테이블 내용 -->
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h2 class="mb-3">Data Visualization</h2>
+            <canvas id="timeSeriesChart"></canvas>
+        </div>
+    </div>
+</div>
+
 <h1 class="mb-4">Session: {{ session.session_name }}</h1>
 <div class="card mb-4">
     <div class="card-body">
@@ -53,7 +70,7 @@
     </div>
 </div>
 {% endif %}
-
+<div id="error-message" class="alert alert-danger" style="display: none;"></div>
 <a href="{% url 'add_data_point' session.id %}" class="btn btn-primary">Add Data Point</a>
 <a href="{% url 'session_list' %}" class="btn btn-secondary">Back to Session List</a>
 
@@ -76,6 +93,22 @@
         console.error('WebSocket closed unexpectedly');
     };
 
+    function showLoading() {
+    document.getElementById('loading').style.display = 'block';
+}
+
+    function hideLoading() {
+    document.getElementById('loading').style.display = 'none';
+    }
+
+    // WebSocket 연결 시 로딩 인디케이터 표시
+    function connectWebSocket() {
+        showLoading();
+        socket = new WebSocket('ws://' + window.location.host + '/ws/bci/' + sessionId + '/');
+        socket.onopen = function() {
+            hideLoading();
+        };
+
     function updateTable(data) {
         const tableBody = document.querySelector('#data-table tbody');
         const newRow = document.createElement('tr');
@@ -88,5 +121,14 @@
         `;
         tableBody.insertBefore(newRow, tableBody.firstChild);
     }
+
+    
+    
+}
+
+        // 데이터 추가 시 로딩 인디케이터 표시
+    document.querySelector('form').addEventListener('submit', function() {
+        showLoading();
+});
 </script>
 {% endblock %}

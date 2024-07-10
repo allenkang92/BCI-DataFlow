@@ -4,23 +4,34 @@ from .forms import BCIDataForm
 from .analysis import generate_session_plots
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import Prefetch
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
 
+
+@cache_page(60 * 15) 
 def session_list(request):
     sessions = BCISession.objects.all()
     return render(request, 'bci_data/session_list.html', {'sessions': sessions})
 
 def session_detail(request, session_id):
-    session = BCISession.objects.get(id=session_id)
-    data_points = session.data_points.all().order_by('timestamp')
-    timeseries_plot, heatmap_plot = generate_session_plots(session)
+    cache_key = f'session_detail_{session_id}'
+    session_data = cache.get(cache_key)
     
-    context = {
-        'session': session,
-        'data_points': data_points,
-        'timeseries_plot': timeseries_plot,
-        'heatmap_plot': heatmap_plot,
-    }
-    return render(request, 'bci_data/session_detail.html', context)
+    if not session_data:
+        session = BCISession.objects.prefetch_related(
+            Prefetch('data_points', queryset=BCIData.objects.order_by('-timestamp'))
+        ).get(id=session_id)
+        
+        data_points = list(session.data_points.all()[:50])
+        
+        session_data = {
+            'session': session,
+            'data_points': data_points,
+        }
+        cache.set(cache_key, session_data, 60 * 5)  # 5분 동안 캐시
+    
+    return render(request, 'bci_data/session_detail.html', session_data)
 
 def create_session(request):
     if request.method == 'POST':
