@@ -1,0 +1,45 @@
+{% extends 'bci_data/base.html' %}
+
+{% block title %}Session: {{ session.session_name }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Session: {{ session.session_name }}</h1>
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Session Details</h5>
+        <p class="card-text"><strong>Date Recorded:</strong> {{ session.date_recorded }}</p>
+        <p class="card-text"><strong>Subject ID:</strong> {{ session.subject_id }}</p>
+    </div>
+</div>
+
+<h2 class="mb-3">Data Points</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>Channel 1</th>
+            <th>Channel 2</th>
+            <th>Channel 3</th>
+            <th>Channel 4</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for point in data_points %}
+        <tr>
+            <td>{{ point.timestamp }}</td>
+            <td>{{ point.channel_1 }}</td>
+            <td>{{ point.channel_2 }}</td>
+            <td>{{ point.channel_3 }}</td>
+            <td>{{ point.channel_4 }}</td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="5" class="text-center">No data points recorded yet.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'add_data_point' session.id %}" class="btn btn-primary">Add Data Point</a>
+<a href="{% url 'session_list' %}" class="btn btn-secondary">Back to Session List</a>
+{% endblock %}

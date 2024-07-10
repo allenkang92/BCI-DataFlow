@@ -1,0 +1,21 @@
+{% extends 'bci_data/base.html' %}
+
+{% block title %}BCI Sessions{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">BCI Sessions</h1>
+<div class="list-group">
+    {% for session in sessions %}
+        <a href="{% url 'session_detail' session.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ session.session_name }}</h5>
+                <small>{{ session.date_recorded|date:"F d, Y" }}</small>
+            </div>
+            <p class="mb-1">Subject ID: {{ session.subject_id }}</p>
+        </a>
+    {% empty %}
+        <p class="text-muted">No sessions available.</p>
+    {% endfor %}
+</div>
+<a href="{% url 'create_session' %}" class="btn btn-primary mt-3">Create New Session</a>
+{% endblock %}
