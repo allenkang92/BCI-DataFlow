@@ -1,6 +1,6 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from .models import BCISession, BCIData
+from channels.db import database_sync_to_async
 
 class BCIDataConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -24,6 +24,9 @@ class BCIDataConsumer(AsyncWebsocketConsumer):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
 
+        # 여기서 데이터베이스 작업이 필요하다면 아래와 같이 처리할 수 있습니다
+        # await self.save_data_point(message)
+
         await self.channel_layer.group_send(
             self.session_group_name,
             {
@@ -38,3 +41,16 @@ class BCIDataConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'message': message
         }))
+
+    @database_sync_to_async
+    def save_data_point(self, data):
+        from .models import BCISession, BCIData
+        session = BCISession.objects.get(id=self.session_id)
+        BCIData.objects.create(
+            session=session,
+            timestamp=data['timestamp'],
+            channel_1=data['channel_1'],
+            channel_2=data['channel_2'],
+            channel_3=data['channel_3'],
+            channel_4=data['channel_4']
+        )
