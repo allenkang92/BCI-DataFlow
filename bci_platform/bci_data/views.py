@@ -10,6 +10,26 @@ from django.views.decorators.cache import cache_page
 from django.db.models import Count, Avg
 from django.utils import timezone
 import json
+from datetime import datetime
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError ("Type %s not serializable" % type(obj))
+
+def session_detail(request, session_id):
+    # ... (기존 코드)
+
+    initial_data = list(session.data_points.order_by('-timestamp')[:100].values(
+        'timestamp', 'channel_1', 'channel_2', 'channel_3', 'channel_4'
+    ))
+    initial_data.reverse()  # 시간순으로 정렬
+
+    context = session_data.copy()
+    context['page_obj'] = page_obj
+    context['initial_chart_data'] = json.dumps(initial_data, default=json_serial)
+    
+    return render(request, 'bci_data/session_detail.html', context)
 
 @cache_page(60 * 15)
 def session_list(request):
