@@ -6,4 +6,5 @@ urlpatterns = [
     path('sessions/<int:session_id>/', views.session_detail, name='session_detail'),
     path('sessions/create/', views.create_session, name='create_session'),
     path('sessions/<int:session_id>/add_data/', views.add_data_point, name='add_data_point'),
+    path('dashboard/', views.dashboard, name='dashboard'),
 ]

@@ -1,0 +1,115 @@
+{% extends 'bci_data/base.html' %}
+
+{% block content %}
+<h1>BCI-DataFlow 대시보드</h1>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">총 세션 수</h5>
+                <p class="card-text">{{ total_sessions }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">총 데이터 포인트</h5>
+                <p class="card-text">{{ total_data_points }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">최근 7일 세션</h5>
+                <p class="card-text">{{ recent_sessions }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">평균 데이터 포인트/세션</h5>
+                <p class="card-text">{{ avg_data_points_per_session|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h2>최근 세션</h2>
+        <canvas id="recentSessionsChart"></canvas>
+    </div>
+    <div class="col-md-6">
+        <h2>채널 활성도</h2>
+        <canvas id="channelActivityChart"></canvas>
+    </div>
+</div>
+
+<script>
+    // 최근 세션 차트
+    const dailySessions = JSON.parse('{{ daily_sessions|safe }}');
+    new Chart(document.getElementById('recentSessionsChart'), {
+        type: 'line',
+        data: {
+            labels: dailySessions.map(item => item.date),
+            datasets: [{
+                label: '일별 세션 수',
+                data: dailySessions.map(item => item.count),
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // 채널 활성도 차트
+    const channelActivity = JSON.parse('{{ channel_activity|safe }}');
+    new Chart(document.getElementById('channelActivityChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Channel 1', 'Channel 2', 'Channel 3', 'Channel 4'],
+            datasets: [{
+                label: '평균 활성도',
+                data: [
+                    channelActivity.channel_1_avg,
+                    channelActivity.channel_2_avg,
+                    channelActivity.channel_3_avg,
+                    channelActivity.channel_4_avg
+                ],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    </script>
+{% endblock %}
