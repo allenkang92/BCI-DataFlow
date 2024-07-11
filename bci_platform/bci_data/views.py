@@ -11,6 +11,7 @@ from django.db.models import Count, Avg
 from django.utils import timezone
 import json
 from datetime import datetime
+from django.core.serializers.json import DjangoJSONEncoder
 import logging
 logger = logging.getLogger(__name__)   
 
@@ -19,22 +20,6 @@ def json_serial(obj):
     if isinstance(obj, datetime):
         return obj.isoformat()
     raise TypeError ("Type %s not serializable" % type(obj))
-
-def session_detail(request, session_id):
-    # ... (기존 코드)
-
-    initial_data = list(session.data_points.order_by('-timestamp')[:100].values(
-        'timestamp', 'channel_1', 'channel_2', 'channel_3', 'channel_4'
-    ))
-    initial_data.reverse()  # 시간순으로 정렬
-
-    logger.debug(f"Initial data: {initial_data[:5]}")
-    
-    context = session_data.copy()
-    context['page_obj'] = page_obj
-    context['initial_chart_data'] = json.dumps(initial_data, default=json_serial)
-    
-    return render(request, 'bci_data/session_detail.html', context)
 
 @cache_page(60 * 15)
 def session_list(request):
@@ -60,12 +45,16 @@ def session_detail(request, session_id):
         ))
         initial_data.reverse()  # 시간순으로 정렬
         
+        # datetime 객체를 ISO 형식 문자열로 변환
+        for data in initial_data:
+            data['timestamp'] = data['timestamp'].isoformat()
+        
         session_data = {
             'session': session,
             'data_points': data_points,
             'timeseries_plot': timeseries_plot,
             'heatmap_plot': heatmap_plot,
-            'initial_chart_data': json.dumps(initial_data)
+            'initial_chart_data': json.dumps(initial_data, cls=DjangoJSONEncoder)
         }
         cache.set(cache_key, session_data, 60 * 5)  # 5분 동안 캐시
     
