@@ -13,8 +13,7 @@ import json
 from datetime import datetime
 from django.core.serializers.json import DjangoJSONEncoder
 
-import logging
-logger = logging.getLogger(__name__)   
+
 class CustomJSONEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if isinstance(obj, Model):
@@ -35,44 +34,45 @@ def session_list(request):
     return render(request, 'bci_data/session_list.html', {'sessions': sessions})
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 def session_detail(request, session_id):
     cache_key = f'session_detail_{session_id}'
     cache.delete(cache_key)  # 기존 캐시 삭제
-    session_data = cache.get(cache_key)
     
-    if not session_data:
-        session = BCISession.objects.prefetch_related(
-            Prefetch('data_points', queryset=BCIData.objects.order_by('-timestamp'))
-        ).get(id=session_id)
-        
-        data_points = list(session.data_points.all()[:50])
-        timeseries_plot, heatmap_plot = generate_session_plots(session)
-        
-        # 실시간 차트를 위한 초기 데이터
-        initial_data = list(session.data_points.order_by('-timestamp')[:100].values(
-            'timestamp', 'channel_1', 'channel_2', 'channel_3', 'channel_4'
-        ))
-        initial_data.reverse()  # 시간순으로 정렬
-        
-        session_data = {
-            'session': session,
-            'data_points': data_points,
-            'timeseries_plot': timeseries_plot,
-            'heatmap_plot': heatmap_plot,
-            'initial_chart_data': initial_data
-        }
-        
-        # JSON 직렬화를 여기서 수행
-        session_data_json = json.dumps(session_data, cls=CustomJSONEncoder)
-        cache.set(cache_key, session_data_json, 60 * 5)  # 5분 동안 캐시
-    else:
-        session_data = json.loads(session_data)
+    session = BCISession.objects.prefetch_related(
+        Prefetch('data_points', queryset=BCIData.objects.order_by('-timestamp'))
+    ).get(id=session_id)
     
-    paginator = Paginator(session_data['data_points'], 50)
+    data_points = list(session.data_points.all()[:50])
+    timeseries_plot, heatmap_plot = generate_session_plots(session)
+    
+    # 실시간 차트를 위한 초기 데이터
+    initial_data = list(session.data_points.order_by('-timestamp')[:100].values(
+        'timestamp', 'channel_1', 'channel_2', 'channel_3', 'channel_4'
+    ))
+    initial_data.reverse()  # 시간순으로 정렬
+    
+    for data in initial_data:
+        data['timestamp'] = timezone.localtime(data['timestamp']).isoformat()
+
+    context['initial_chart_data'] = json.dumps(initial_data)
+
+    logger.debug(f"Initial data first item: {initial_data[0] if initial_data else 'No data'}")
+    
+    context = {
+        'session': session,
+        'data_points': data_points,
+        'timeseries_plot': timeseries_plot,
+        'heatmap_plot': heatmap_plot,
+        'initial_chart_data': json.dumps(initial_data, cls=DjangoJSONEncoder)
+    }
+    
+    paginator = Paginator(data_points, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    context = session_data.copy()
     context['page_obj'] = page_obj
     
     return render(request, 'bci_data/session_detail.html', context)
