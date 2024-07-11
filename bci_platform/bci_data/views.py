@@ -11,6 +11,9 @@ from django.db.models import Count, Avg
 from django.utils import timezone
 import json
 from datetime import datetime
+import logging
+logger = logging.getLogger(__name__)   
+
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
     if isinstance(obj, datetime):
@@ -25,6 +28,8 @@ def session_detail(request, session_id):
     ))
     initial_data.reverse()  # 시간순으로 정렬
 
+    logger.debug(f"Initial data: {initial_data[:5]}")
+    
     context = session_data.copy()
     context['page_obj'] = page_obj
     context['initial_chart_data'] = json.dumps(initial_data, default=json_serial)
