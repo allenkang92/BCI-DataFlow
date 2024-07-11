@@ -42,7 +42,10 @@ def generate_session_plots(session):
     
     heatmap_plot = get_plot_as_base64(plt)
     plt.close()
-    
+
+    for data in timeseries_data:
+        data['timestamp'] = timezone.localtime(data['timestamp']).isoformat()
+
     return timeseries_plot, heatmap_plot
 
 def get_plot_as_base64(plt):

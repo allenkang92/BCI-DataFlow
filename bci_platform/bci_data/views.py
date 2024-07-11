@@ -98,11 +98,13 @@ def session_detail(request, session_id):
 
     logger.debug(f"Initial data first item: {initial_data[0] if initial_data else 'No data'}")
     
+    timeseries_plot, heatmap_plot = generate_session_plots(session)
+    
     context = {
         'session': session,
         'data_points': data_points,
-        'timeseries_plot': timeseries_plot,
-        'heatmap_plot': heatmap_plot,
+        'timeseries_plot': json.dumps(timeseries_plot, cls=DjangoJSONEncoder),
+        'heatmap_plot': json.dumps(heatmap_plot, cls=DjangoJSONEncoder),
         'initial_chart_data': json.dumps(initial_data, cls=DjangoJSONEncoder)
     }
     
