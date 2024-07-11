@@ -13,6 +13,8 @@ def session_list(request):
     sessions = BCISession.objects.all()
     return render(request, 'bci_data/session_list.html', {'sessions': sessions})
 
+import json
+
 def session_detail(request, session_id):
     cache_key = f'session_detail_{session_id}'
     session_data = cache.get(cache_key)
@@ -25,11 +27,18 @@ def session_detail(request, session_id):
         data_points = list(session.data_points.all()[:50])
         timeseries_plot, heatmap_plot = generate_session_plots(session)
         
+        # 실시간 차트를 위한 초기 데이터
+        initial_data = list(session.data_points.order_by('-timestamp')[:100].values(
+            'timestamp', 'channel_1', 'channel_2', 'channel_3', 'channel_4'
+        ))
+        initial_data.reverse()  # 시간순으로 정렬
+        
         session_data = {
             'session': session,
             'data_points': data_points,
             'timeseries_plot': timeseries_plot,
             'heatmap_plot': heatmap_plot,
+            'initial_chart_data': json.dumps(initial_data)
         }
         cache.set(cache_key, session_data, 60 * 5)  # 5분 동안 캐시
     

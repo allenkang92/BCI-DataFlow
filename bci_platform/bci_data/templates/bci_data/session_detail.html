@@ -3,79 +3,85 @@
 {% block title %}Session: {{ session.session_name }}{% endblock %}
 
 {% block content %}
+<!-- 기존 내용 유지 -->
+
 <div class="container">
     <div class="row">
-        <div class="col-md-6">
-            <h2 class="mb-3">Data Points</h2>
-            <div class="table-responsive">
-                <table class="table table-striped" id="data-table">
-                    <!-- 테이블 내용 -->
-                </table>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <h2 class="mb-3">Data Visualization</h2>
-            <canvas id="timeSeriesChart"></canvas>
+        <div class="col-md-12">
+            <h2 class="mb-3">Real-time Data Visualization</h2>
+            <canvas id="realTimeChart"></canvas>
         </div>
     </div>
 </div>
 
-<h1 class="mb-4">Session: {{ session.session_name }}</h1>
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Session Details</h5>
-        <p class="card-text"><strong>Date Recorded:</strong> {{ session.date_recorded }}</p>
-        <p class="card-text"><strong>Subject ID:</strong> {{ session.subject_id }}</p>
-    </div>
-</div>
+<!-- 기존 내용 유지 -->
 
-<h2 class="mb-3">Data Points</h2>
-<table class="table table-striped" id="data-table">
-    <thead>
-        <tr>
-            <th>Timestamp</th>
-            <th>Channel 1</th>
-            <th>Channel 2</th>
-            <th>Channel 3</th>
-            <th>Channel 4</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for point in data_points %}
-        <tr>
-            <td>{{ point.timestamp }}</td>
-            <td>{{ point.channel_1 }}</td>
-            <td>{{ point.channel_2 }}</td>
-            <td>{{ point.channel_3 }}</td>
-            <td>{{ point.channel_4 }}</td>
-        </tr>
-    {% empty %}
-        <tr>
-            <td colspan="5" class="text-center">No data points recorded yet.</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
-
-{% if timeseries_plot %}
-<h2 class="mb-3">Data Visualization</h2>
-<div class="row">
-    <div class="col-md-6 mb-4">
-        <h3>Channel Data Over Time</h3>
-        <img src="data:image/png;base64,{{ timeseries_plot }}" alt="Time Series Plot" class="img-fluid">
-    </div>
-    <div class="col-md-6 mb-4">
-        <h3>Channel Correlation Heatmap</h3>
-        <img src="data:image/png;base64,{{ heatmap_plot }}" alt="Correlation Heatmap" class="img-fluid">
-    </div>
-</div>
-{% endif %}
-<div id="error-message" class="alert alert-danger" style="display: none;"></div>
-<a href="{% url 'add_data_point' session.id %}" class="btn btn-primary">Add Data Point</a>
-<a href="{% url 'session_list' %}" class="btn btn-secondary">Back to Session List</a>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const sessionId = "{{ session.id }}";
+const ctx = document.getElementById('realTimeChart').getContext('2d');
+let chart;
+
+function initChart() {
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Channel 1',
+                data: [],
+                borderColor: 'red',
+                fill: false
+            }, {
+                label: 'Channel 2',
+                data: [],
+                borderColor: 'blue',
+                fill: false
+            }, {
+                label: 'Channel 3',
+                data: [],
+                borderColor: 'green',
+                fill: false
+            }, {
+                label: 'Channel 4',
+                data: [],
+                borderColor: 'purple',
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'second'
+                    }
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function updateChart(data) {
+    const timestamp = new Date(data.timestamp);
+    chart.data.labels.push(timestamp);
+    chart.data.datasets[0].data.push(data.channel_1);
+    chart.data.datasets[1].data.push(data.channel_2);
+    chart.data.datasets[2].data.push(data.channel_3);
+    chart.data.datasets[3].data.push(data.channel_4);
+
+    // 데이터 포인트를 100개로 제한
+    if (chart.data.labels.length > 100) {
+        chart.data.labels.shift();
+        chart.data.datasets.forEach(dataset => dataset.data.shift());
+    }
+
+    chart.update();
+}
 
 function connectWebSocket() {
     const socket = new WebSocket(`ws://${window.location.host}/ws/bci/${sessionId}/`);
@@ -88,7 +94,7 @@ function connectWebSocket() {
         const data = JSON.parse(e.data);
         console.log(data);
         updateTable(data.message);
-        updateChart(data.message);  // 차트 업데이트 함수 구현 필요
+        updateChart(data.message);
     };
 
     socket.onclose = function(e) {
@@ -98,12 +104,12 @@ function connectWebSocket() {
 
     socket.onerror = function(err) {
         console.error("WebSocket 에러:", err);
+        document.getElementById('error-message').textContent = "연결 오류가 발생했습니다. 페이지를 새로고침 해주세요.";
+        document.getElementById('error-message').style.display = 'block';
     };
 
     return socket;
 }
-
-const socket = connectWebSocket();
 
 function updateTable(data) {
     const tableBody = document.querySelector('#data-table tbody');
@@ -118,9 +124,12 @@ function updateTable(data) {
     tableBody.insertBefore(newRow, tableBody.firstChild);
 }
 
-function updateChart(data) {
-        // 차트 업데이트 로직을 여기에 구현하세요
-        // 현재 구현된 차트 라이브러리에 따라 다를 수 있습니다
-}
+// 초기화 및 실행
+initChart();
+const initialData = JSON.parse('{{ initial_chart_data|safe }}');
+initialData.forEach(data => {
+    updateChart(data);
+});
+const socket = connectWebSocket();
 </script>
 {% endblock %}
