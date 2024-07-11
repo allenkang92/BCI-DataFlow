@@ -7,14 +7,22 @@ from django.core.paginator import Paginator
 from django.db.models import Prefetch
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Model
 from django.utils import timezone
 import json
 from datetime import datetime
 from django.core.serializers.json import DjangoJSONEncoder
+
 import logging
 logger = logging.getLogger(__name__)   
-
+class CustomJSONEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Model):
+            return str(obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+    
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
     if isinstance(obj, datetime):
@@ -29,6 +37,7 @@ def session_list(request):
 
 def session_detail(request, session_id):
     cache_key = f'session_detail_{session_id}'
+    cache.delete(cache_key)  # 기존 캐시 삭제
     session_data = cache.get(cache_key)
     
     if not session_data:
@@ -45,18 +54,19 @@ def session_detail(request, session_id):
         ))
         initial_data.reverse()  # 시간순으로 정렬
         
-        # datetime 객체를 ISO 형식 문자열로 변환
-        for data in initial_data:
-            data['timestamp'] = data['timestamp'].isoformat()
-        
         session_data = {
             'session': session,
             'data_points': data_points,
             'timeseries_plot': timeseries_plot,
             'heatmap_plot': heatmap_plot,
-            'initial_chart_data': json.dumps(initial_data, cls=DjangoJSONEncoder)
+            'initial_chart_data': initial_data
         }
-        cache.set(cache_key, session_data, 60 * 5)  # 5분 동안 캐시
+        
+        # JSON 직렬화를 여기서 수행
+        session_data_json = json.dumps(session_data, cls=CustomJSONEncoder)
+        cache.set(cache_key, session_data_json, 60 * 5)  # 5분 동안 캐시
+    else:
+        session_data = json.loads(session_data)
     
     paginator = Paginator(session_data['data_points'], 50)
     page_number = request.GET.get('page')
