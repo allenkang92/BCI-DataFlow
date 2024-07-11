@@ -103,8 +103,8 @@ def session_detail(request, session_id):
     context = {
         'session': session,
         'data_points': data_points,
-        'timeseries_plot': json.dumps(timeseries_plot, cls=DjangoJSONEncoder),
-        'heatmap_plot': json.dumps(heatmap_plot, cls=DjangoJSONEncoder),
+        'timeseries_plot': timeseries_plot,
+        'heatmap_plot': heatmap_plot,
         'initial_chart_data': json.dumps(initial_data, cls=DjangoJSONEncoder)
     }
     

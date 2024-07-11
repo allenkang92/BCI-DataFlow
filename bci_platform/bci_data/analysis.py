@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import io
 import base64
+from django.utils import timezone
 
 def generate_session_plots(session):
     data_points = session.data_points.all().order_by('timestamp')
@@ -12,6 +13,9 @@ def generate_session_plots(session):
     
     if df.empty:
         return None, None
+
+    # timestamp를 문자열로 변환
+    df['timestamp'] = df['timestamp'].apply(lambda x: timezone.localtime(x).isoformat())
 
     # 시계열 플롯
     plt.figure(figsize=(10, 6))
@@ -43,9 +47,6 @@ def generate_session_plots(session):
     heatmap_plot = get_plot_as_base64(plt)
     plt.close()
 
-    for data in timeseries_data:
-        data['timestamp'] = timezone.localtime(data['timestamp']).isoformat()
-
     return timeseries_plot, heatmap_plot
 
 def get_plot_as_base64(plt):
@@ -53,5 +54,4 @@ def get_plot_as_base64(plt):
     plt.savefig(buf, format='png')
     buf.seek(0)
     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-    # plt.close()
     return image_base64
