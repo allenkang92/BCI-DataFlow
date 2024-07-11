@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import BCISession, BCIData
-from .forms import BCIDataForm
+from .forms import BCIDataForm, BCISessionForm
 from .analysis import generate_session_plots
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -8,8 +8,7 @@ from django.db.models import Prefetch
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 
-
-@cache_page(60 * 15) 
+@cache_page(60 * 15)
 def session_list(request):
     sessions = BCISession.objects.all()
     return render(request, 'bci_data/session_list.html', {'sessions': sessions})
@@ -24,14 +23,24 @@ def session_detail(request, session_id):
         ).get(id=session_id)
         
         data_points = list(session.data_points.all()[:50])
+        timeseries_plot, heatmap_plot = generate_session_plots(session)
         
         session_data = {
             'session': session,
             'data_points': data_points,
+            'timeseries_plot': timeseries_plot,
+            'heatmap_plot': heatmap_plot,
         }
         cache.set(cache_key, session_data, 60 * 5)  # 5분 동안 캐시
     
-    return render(request, 'bci_data/session_detail.html', session_data)
+    paginator = Paginator(session_data['data_points'], 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = session_data.copy()
+    context['page_obj'] = page_obj
+    
+    return render(request, 'bci_data/session_detail.html', context)
 
 def create_session(request):
     if request.method == 'POST':
@@ -43,46 +52,41 @@ def create_session(request):
         form = BCISessionForm()
     return render(request, 'bci_data/create_session.html', {'form': form})
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 def add_data_point(request, session_id):
     session = get_object_or_404(BCISession, id=session_id)
     if request.method == 'POST':
         form = BCIDataForm(request.POST)
         if form.is_valid():
-            data_point = form.save(commit=False)
-            data_point.session = session
-            data_point.save()
-            return redirect('session_detail', session_id=session.id)
-    else:
-        form = BCIDataForm()
-    return render(request, 'bci_data/add_data_point.html', {'form': form, 'session': session})
-
-def add_data_point(request, session_id):
-    if request.method == 'POST':
-        form = BCIDataForm(request.POST)
-        if form.is_valid():
             try:
                 data_point = form.save(commit=False)
-                data_point.session_id = session_id
+                data_point.session = session
                 data_point.full_clean()  # 추가 유효성 검사
                 data_point.save()
-                # 웹소켓을 통해 데이터 전송 (기존 코드)
-                return redirect('session_detail', session_id=session_id)
+                
+                # 웹소켓을 통해 데이터 전송
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f"bci_session_{session_id}",
+                    {
+                        "type": "bci_message",
+                        "message": {
+                            "timestamp": data_point.timestamp.isoformat(),
+                            "channel_1": data_point.channel_1,
+                            "channel_2": data_point.channel_2,
+                            "channel_3": data_point.channel_3,
+                            "channel_4": data_point.channel_4,
+                        }
+                    }
+                )
+                
+                cache.delete(f'session_detail_{session_id}')  # 캐시 삭제
+                return redirect('session_detail', session_id=session.id)
             except ValidationError as e:
                 form.add_error(None, e.message_dict)
     else:
         form = BCIDataForm()
     
-    return render(request, 'bci_data/add_data_point.html', {'form': form, 'session_id': session_id})
-
-def session_detail(request, session_id):
-    session = BCISession.objects.get(id=session_id)
-    data_points = session.data_points.order_by('-timestamp')
-    paginator = Paginator(data_points, 50)  # 페이지당 50개 데이터 포인트
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'session': session,
-        'page_obj': page_obj,
-    }
-    return render(request, 'bci_data/session_detail.html', context)
+    return render(request, 'bci_data/add_data_point.html', {'form': form, 'session': session})
