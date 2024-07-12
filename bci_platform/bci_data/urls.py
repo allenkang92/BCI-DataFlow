@@ -9,4 +9,6 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('sessions/<int:session_id>/export/', views.export_session_data, name='export_session_data'),
     path('sessions/<int:session_id>/import/', views.import_session_data, name='import_session_data'),
+    path('sessions/<int:session_id>/delete/', views.delete_session, name='delete_session'),
+    path('sessions/<int:session_id>/data/<int:data_point_id>/delete/', views.delete_data_point, name='delete_data_point'),
 ]

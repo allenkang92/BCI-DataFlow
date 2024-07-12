@@ -4,6 +4,18 @@
 
 {% block content %}
 <!-- 기존 내용 유지 -->
+{% for point in page_obj %}
+    <tr>
+        <td>{{ point.timestamp }}</td>
+        <td>{{ point.channel_1 }}</td>
+        <td>{{ point.channel_2 }}</td>
+        <td>{{ point.channel_3 }}</td>
+        <td>{{ point.channel_4 }}</td>
+        <td>
+            <a href="{% url 'delete_data_point' session.id point.id %}" class="btn btn-sm btn-danger">Delete</a>
+        </td>
+    </tr>
+{% endfor %}
 
 <div class="container">
     <div class="row">

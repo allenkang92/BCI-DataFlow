@@ -19,3 +19,14 @@
 </div>
 <a href="{% url 'create_session' %}" class="btn btn-primary mt-3">Create New Session</a>
 {% endblock %}
+
+{% for session in sessions %}
+    <tr>
+        <td>{{ session.session_name }}</td>
+        <td>{{ session.date_recorded }}</td>
+        <td>
+            <a href="{% url 'session_detail' session.id %}" class="btn btn-primary">View</a>
+            <a href="{% url 'delete_session' session.id %}" class="btn btn-danger">Delete</a>
+        </td>
+    </tr>
+{% endfor %}

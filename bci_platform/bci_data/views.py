@@ -12,7 +12,8 @@ from asgiref.sync import async_to_sync
 import json
 import csv
 import logging
-
+from django.contrib import messages
+from django.urls import reverse
 from .models import BCISession, BCIData
 from .forms import BCIDataForm, BCISessionForm, DataImportForm
 from .analysis import generate_session_plots
@@ -31,6 +32,22 @@ class CustomJSONEncoder(DjangoJSONEncoder):
 def session_list(request):
     sessions = BCISession.objects.all()
     return render(request, 'bci_data/session_list.html', {'sessions': sessions})
+
+def delete_session(request, session_id):
+    session = get_object_or_404(BCISession, id=session_id)
+    if request.method == 'POST':
+        session.delete()
+        messages.success(request, f"Session {session.session_name} has been deleted.")
+        return redirect('session_list')
+    return render(request, 'bci_data/delete_session.html', {'session': session})
+
+def delete_data_point(request, session_id, data_point_id):
+    data_point = get_object_or_404(BCIData, id=data_point_id, session_id=session_id)
+    if request.method == 'POST':
+        data_point.delete()
+        messages.success(request, "Data point has been deleted.")
+        return redirect('session_detail', session_id=session_id)
+    return render(request, 'bci_data/delete_data_point.html', {'data_point': data_point})
 
 def session_detail(request, session_id):
     cache_key = f'session_detail_{session_id}'

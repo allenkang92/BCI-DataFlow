@@ -1,0 +1,12 @@
+{% extends 'bci_data/base.html' %}
+
+{% block content %}
+<h1>Delete Data Point</h1>
+<p>Are you sure you want to delete this data point?</p>
+<p>Timestamp: {{ data_point.timestamp }}</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'session_detail' data_point.session.id %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
