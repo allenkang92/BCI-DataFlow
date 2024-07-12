@@ -1,6 +1,10 @@
 from django import forms
 from .models import BCISession, BCIData
 
+
+class DataImportForm(forms.Form):
+    file = forms.FileField()
+
 class BCISessionForm(forms.ModelForm):
     class Meta:
         model = BCISession

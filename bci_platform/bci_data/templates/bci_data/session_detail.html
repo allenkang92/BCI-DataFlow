@@ -14,6 +14,13 @@
     </div>
 </div>
 
+<form method="get">
+    <input type="text" name="search" placeholder="Search..." value="{{ search_query }}">
+    <input type="number" name="min_value" placeholder="Min value" value="{{ min_value }}">
+    <input type="number" name="max_value" placeholder="Max value" value="{{ max_value }}">
+    <button type="submit">Filter</button>
+</form>
+
 <!-- 기존 내용 유지 -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
