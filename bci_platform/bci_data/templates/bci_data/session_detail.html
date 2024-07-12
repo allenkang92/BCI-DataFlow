@@ -1,154 +1,30 @@
-{% extends 'bci_data/base.html' %}
-
-{% block title %}Session: {{ session.session_name }}{% endblock %}
-
-{% block content %}
-<!-- 기존 내용 유지 -->
-{% for point in page_obj %}
-    <tr>
-        <td>{{ point.timestamp }}</td>
-        <td>{{ point.channel_1 }}</td>
-        <td>{{ point.channel_2 }}</td>
-        <td>{{ point.channel_3 }}</td>
-        <td>{{ point.channel_4 }}</td>
-        <td>
-            <a href="{% url 'delete_data_point' session.id point.id %}" class="btn btn-sm btn-danger">Delete</a>
-        </td>
-    </tr>
-{% endfor %}
-
-<div class="container">
-    <div class="row">
-        <div class="col-md-12">
-            <h2 class="mb-3">Real-time Data Visualization</h2>
-            <canvas id="realTimeChart"></canvas>
-        </div>
-    </div>
-</div>
-
-<form method="get">
-    <input type="text" name="search" placeholder="Search..." value="{{ search_query }}">
-    <input type="number" name="min_value" placeholder="Min value" value="{{ min_value }}">
-    <input type="number" name="max_value" placeholder="Max value" value="{{ max_value }}">
-    <button type="submit">Filter</button>
-</form>
-
-<!-- 기존 내용 유지 -->
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-const sessionId = "{{ session.id }}";
-const ctx = document.getElementById('realTimeChart').getContext('2d');
-let chart;
-
-function initChart() {
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Channel 1',
-                data: [],
-                borderColor: 'red',
-                fill: false
-            }, {
-                label: 'Channel 2',
-                data: [],
-                borderColor: 'blue',
-                fill: false
-            }, {
-                label: 'Channel 3',
-                data: [],
-                borderColor: 'green',
-                fill: false
-            }, {
-                label: 'Channel 4',
-                data: [],
-                borderColor: 'purple',
-                fill: false
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        unit: 'second'
-                    }
-                },
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-}
-
-function updateChart(data) {
-    const timestamp = new Date(data.timestamp);
-    chart.data.labels.push(timestamp);
-    chart.data.datasets[0].data.push(data.channel_1);
-    chart.data.datasets[1].data.push(data.channel_2);
-    chart.data.datasets[2].data.push(data.channel_3);
-    chart.data.datasets[3].data.push(data.channel_4);
-
-    // 데이터 포인트를 100개로 제한
-    if (chart.data.labels.length > 100) {
-        chart.data.labels.shift();
-        chart.data.datasets.forEach(dataset => dataset.data.shift());
-    }
-
-    chart.update();
-}
-
-function connectWebSocket() {
-    const socket = new WebSocket(`ws://${window.location.host}/ws/bci/${sessionId}/`);
-
-    socket.onopen = function(e) {
-        console.log("WebSocket 연결됨");
-    };
-
-    socket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        console.log(data);
-        updateTable(data.message);
-        updateChart(data.message);
-    };
-
-    socket.onclose = function(e) {
-        console.log("WebSocket 연결 끊김. 재연결 시도...");
-        setTimeout(connectWebSocket, 1000);
-    };
-
-    socket.onerror = function(err) {
-        console.error("WebSocket 에러:", err);
-        document.getElementById('error-message').textContent = "연결 오류가 발생했습니다. 페이지를 새로고침 해주세요.";
-        document.getElementById('error-message').style.display = 'block';
-    };
-
-    return socket;
-}
-
-function updateTable(data) {
-    const tableBody = document.querySelector('#data-table tbody');
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-        <td>${data.timestamp}</td>
-        <td>${data.channel_1}</td>
-        <td>${data.channel_2}</td>
-        <td>${data.channel_3}</td>
-        <td>${data.channel_4}</td>
-    `;
-    tableBody.insertBefore(newRow, tableBody.firstChild);
-}
-
-// 초기화 및 실행
-initChart();
-const initialData = JSON.parse('{{ initial_chart_data|safe }}');
-initialData.forEach(data => {
-    updateChart(data);
-});
-const socket = connectWebSocket();
-</script>
-{% endblock %}
+<table id="data-table" class="table table-striped">
+    <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>Channel 1</th>
+            <th>Channel 2</th>
+            <th>Channel 3</th>
+            <th>Channel 4</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for point in page_obj %}
+        <tr>
+            <td>{{ point.timestamp }}</td>
+            <td>{{ point.channel_1 }}</td>
+            <td>{{ point.channel_2 }}</td>
+            <td>{{ point.channel_3 }}</td>
+            <td>{{ point.channel_4 }}</td>
+            <td>
+                <a href="{% url 'delete_data_point' session.id point.id %}" class="btn btn-sm btn-danger">Delete</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">No data points recorded yet.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

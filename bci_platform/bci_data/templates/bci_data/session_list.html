@@ -4,29 +4,32 @@
 
 {% block content %}
 <h1 class="mb-4">BCI Sessions</h1>
-<div class="list-group">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Session Name</th>
+            <th>Date Recorded</th>
+            <th>Subject ID</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
     {% for session in sessions %}
-        <a href="{% url 'session_detail' session.id %}" class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ session.session_name }}</h5>
-                <small>{{ session.date_recorded|date:"F d, Y" }}</small>
-            </div>
-            <p class="mb-1">Subject ID: {{ session.subject_id }}</p>
-        </a>
+        <tr>
+            <td>{{ session.session_name }}</td>
+            <td>{{ session.date_recorded|date:"F d, Y" }}</td>
+            <td>{{ session.subject_id }}</td>
+            <td>
+                <a href="{% url 'session_detail' session.id %}" class="btn btn-primary btn-sm">View</a>
+                <a href="{% url 'delete_session' session.id %}" class="btn btn-danger btn-sm">Delete</a>
+            </td>
+        </tr>
     {% empty %}
-        <p class="text-muted">No sessions available.</p>
+        <tr>
+            <td colspan="4" class="text-muted">No sessions available.</td>
+        </tr>
     {% endfor %}
-</div>
+    </tbody>
+</table>
 <a href="{% url 'create_session' %}" class="btn btn-primary mt-3">Create New Session</a>
 {% endblock %}
-
-{% for session in sessions %}
-    <tr>
-        <td>{{ session.session_name }}</td>
-        <td>{{ session.date_recorded }}</td>
-        <td>
-            <a href="{% url 'session_detail' session.id %}" class="btn btn-primary">View</a>
-            <a href="{% url 'delete_session' session.id %}" class="btn btn-danger">Delete</a>
-        </td>
-    </tr>
-{% endfor %}
