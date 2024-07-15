@@ -1,6 +1,16 @@
 from django import forms
-from .models import BCISession, BCIData
+from .models import BCISession, BCIData, Preprocessor, PreprocessingStep
 
+
+class PreprocessorForm(forms.ModelForm):
+    class Meta:
+        model = Preprocessor
+        fields = ['name', 'description']
+
+class PreprocessingStepForm(forms.ModelForm):
+    class Meta:
+        model = PreprocessingStep
+        fields = ['step_type', 'parameters']
 
 class DataImportForm(forms.Form):
     file = forms.FileField()

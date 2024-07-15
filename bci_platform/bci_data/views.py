@@ -14,9 +14,12 @@ import csv
 import logging
 from django.contrib import messages
 from django.urls import reverse
-from .models import BCISession, BCIData
-from .forms import BCIDataForm, BCISessionForm, DataImportForm
+from .models import BCISession, BCIData, Preprocessor, PreprocessingStep
+from .forms import BCIDataForm, BCISessionForm, DataImportForm, PreprocessorForm, PreprocessingStepForm
 from .analysis import generate_session_plots
+from .preprocessing import apply_preprocessing, visualize_preprocessing
+from io import BytesIO
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +122,50 @@ def session_detail(request, session_id):
     }
     
     return render(request, 'bci_data/session_detail.html', context)
+
+def create_preprocessor(request):
+    if request.method == 'POST':
+        form = PreprocessorForm(request.POST)
+        if form.is_valid():
+            preprocessor = form.save()
+            return redirect('add_preprocessing_step', preprocessor_id=preprocessor.id)
+    else:
+        form = PreprocessorForm()
+    return render(request, 'create_preprocessor.html', {'form': form})
+
+def add_preprocessing_step(request, preprocessor_id):
+    preprocessor = Preprocessor.objects.get(id=preprocessor_id)
+    if request.method == 'POST':
+        form = PreprocessingStepForm(request.POST)
+        if form.is_valid():
+            step = form.save(commit=False)
+            step.preprocessor = preprocessor
+            step.order = preprocessor.steps.count() + 1
+            step.save()
+            return redirect('preprocessor_detail', preprocessor_id=preprocessor.id)
+    else:
+        form = PreprocessingStepForm()
+    return render(request, 'add_preprocessing_step.html', {'form': form, 'preprocessor': preprocessor})
+
+def preprocess_data(request, session_id):
+    session = BCISession.objects.get(id=session_id)
+    preprocessor = Preprocessor.objects.get(id=request.POST['preprocessor_id'])
+    
+    original_data = session.get_data()  # BCISession 모델에 데이터를 가져오는 메서드 구현 필요
+    processed_data = apply_preprocessing(original_data, preprocessor)
+    
+    plt = visualize_preprocessing(original_data, processed_data)
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8').replace('\n', '')
+    buf.close()
+    
+    context = {
+        'session': session,
+        'preprocessor': preprocessor,
+        'visualization': f'data:image/png;base64,{image_base64}',
+    }
+    return render(request, 'preprocess_result.html', context)
 
 def dashboard(request):
     # 기본 통계 계산
