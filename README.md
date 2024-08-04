@@ -1,4 +1,4 @@
-# BCI-DataFlow: 통합 BCI를 위한 데이터 처리 플랫폼
+# BCI-DataFlow: BCI를 위한 데이터 처리 플랫폼
 
 ## 프로젝트 개요
 
